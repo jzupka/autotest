@@ -1419,6 +1419,8 @@ variants:
         vms = ""
         #Try to start guest with all flags which are supported by host.
         all_host_supported_flags = "no"
+        #If cpu_model is "" or isn't defined test try test all cpu models,
+        #which host supports.
         cpu_model = "core2duo"
         guest_spec_flags = "fxsr_opt hypervisor ds pdpe1gb osxsave svm"
         host_spec_flags = "pbe tm ds_cpl monitor acpi dtes64 ht tm2 xtpr est pdcm smx"
