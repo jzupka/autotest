@@ -966,6 +966,7 @@ class QMPMonitor(Monitor):
         @param value: Speed in bytes/sec
         @return: The response to the command
         """
+        value = virt_utils.humannum_to_computernum(value, "M")
         args = {"value": value}
         return self.cmd("migrate_set_speed", args)
 
