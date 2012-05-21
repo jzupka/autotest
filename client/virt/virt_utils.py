@@ -3933,6 +3933,31 @@ def install_host_kernel(job, params):
                      install_type)
 
 
+def install_cpuflags_util_on_vm(test, vm, dst_dir, extra_flags=None):
+    """
+    Install stress to vm.
+
+    @param vm: virtual machine.
+    @param dst_dir: Installation path.
+    @param extra_flags: Extraflags for gcc compiler.
+    """
+    if not extra_flags:
+        extra_flags = ""
+
+    cpuflags_src = os.path.join(test.virtdir, "deps", "test_cpu_flags")
+    cpuflags_dst = os.path.join(dst_dir, "test_cpu_flags")
+    session = vm.wait_for_login()
+    session.cmd("rm -rf %s" %
+                (cpuflags_dst))
+    session.cmd("sync")
+    vm.copy_files_to(cpuflags_src, dst_dir)
+    session.cmd("sync")
+    session.cmd("cd %s; make EXTRA_FLAGS='%s';" %
+                    (cpuflags_dst, extra_flags))
+    session.cmd("sync")
+    session.close()
+
+
 def if_nametoindex(ifname):
     """
     Map an interface name into its corresponding index.
@@ -4365,6 +4390,29 @@ class NumaNode(object):
             logging.info("    %s: %s" % (i, self.dict[i]))
 
 
+def humannum_to_computernum(num, default_scaler="B"):
+    """
+    Converts human readable number to computer readable num.
+
+    @param num: human monitor migration speed. 1G
+    @param default_scaler: Default num scaler form dict orders.
+    @return: QMP monitor speed in bytes.
+    """
+    orders = {'B': 1,
+              'K': 1024,
+              'M': 1024 * 1024,
+              'G': 1024 * 1024 * 1024,
+              'T': 1024 * 1024 * 1024 * 1024,
+              }
+
+    order = re.findall("([BbKkMmGgTt])", num[-1])
+    if not order:
+        num += default_scaler
+        order = [default_scaler]
+
+    return int(float(num[0:-1]) * orders[order[0].upper()])
+
+
 def generate_mac_address_simple():
     r = random.SystemRandom()
     mac = "9a:%02x:%02x:%02x:%02x:%02x" % (r.randint(0x00, 0xff),
@@ -4380,7 +4428,10 @@ def guest_active(vm):
     if isinstance(o, str):
         return "status: running" in o
     else:
-        return o.get("status") == "running"
+        if "status" in o:
+            return o.get("status") == "running"
+        else:
+            return o.get("running")
 
 
 def preprocess_images(bindir, params, env):
