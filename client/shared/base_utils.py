@@ -400,6 +400,40 @@ def matrix_to_string(matrix, header=None):
     return matrix_str
 
 
+class Statistic(object):
+    """
+    Class collect information about migration run.
+    """
+    def __init__(self):
+        self._sum = 0
+        self._count = 0
+        self._max = None
+        self._min = None
+
+    def get_average(self):
+        if self._count != 0:
+            return self._sum / self._count
+        else:
+            return None
+
+    def get_min(self):
+        return self._min
+
+    def get_max(self):
+        return self._max
+
+    def record(self, value):
+        """
+        Record new value to statistic.
+        """
+        self._count += 1
+        self._sum += value
+        if not self._max or self._max < value:
+            self._max = value
+        if not self._min or self._min > value:
+            self._min = value
+
+
 def read_keyval(path):
     """
     Read a key-value pair format file into a dictionary, and return it.
