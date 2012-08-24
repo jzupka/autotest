@@ -1729,9 +1729,12 @@ def import_site_function(path, module, funcname, dummy, modulefile=None):
     return import_site_symbol(path, module, funcname, dummy, modulefile)
 
 
-def _get_pid_path(program_name):
-    pid_files_dir = GLOBAL_CONFIG.get_config_value("SERVER", 'pid_files_dir',
-                                                   default="")
+def get_pid_path(program_name, pid_files_dir=None):
+    if pid_files_dir is None:
+        pid_files_dir = GLOBAL_CONFIG.get_config_value("SERVER",
+                                                       'pid_files_dir',
+                                                       default="")
+
     if not pid_files_dir:
         base_dir = os.path.dirname(__file__)
         pid_path = os.path.abspath(os.path.join(base_dir, "..", "..",
@@ -1742,25 +1745,25 @@ def _get_pid_path(program_name):
     return pid_path
 
 
-def write_pid(program_name):
+def write_pid(program_name, pid_files_dir=None):
     """
     Try to drop <program_name>.pid in the main autotest directory.
 
     Args:
       program_name: prefix for file name
     """
-    pidfile = open(_get_pid_path(program_name), "w")
+    pidfile = open(get_pid_path(program_name, pid_files_dir), "w")
     try:
         pidfile.write("%s\n" % os.getpid())
     finally:
         pidfile.close()
 
 
-def delete_pid_file_if_exists(program_name):
+def delete_pid_file_if_exists(program_name, pid_files_dir=None):
     """
     Tries to remove <program_name>.pid from the main autotest directory.
     """
-    pidfile_path = _get_pid_path(program_name)
+    pidfile_path = get_pid_path(program_name, pid_files_dir)
 
     try:
         os.remove(pidfile_path)
@@ -1770,18 +1773,18 @@ def delete_pid_file_if_exists(program_name):
         raise
 
 
-def get_pid_from_file(program_name):
+def get_pid_from_file(program_name, pid_files_dir=None):
     """
     Reads the pid from <program_name>.pid in the autotest directory.
 
     @param program_name the name of the program
     @return the pid if the file exists, None otherwise.
     """
-    pidfile_path = _get_pid_path(program_name)
+    pidfile_path = get_pid_path(program_name, pid_files_dir)
     if not os.path.exists(pidfile_path):
         return None
 
-    pidfile = open(_get_pid_path(program_name), 'r')
+    pidfile = open(get_pid_path(program_name, pid_files_dir), 'r')
 
     try:
         try:
@@ -1804,27 +1807,27 @@ def get_process_name(pid):
     return get_field(read_file("/proc/%d/stat" % pid), 1)[1:-1]
 
 
-def program_is_alive(program_name):
+def program_is_alive(program_name, pid_files_dir=None):
     """
     Checks if the process is alive and not in Zombie state.
 
     @param program_name the name of the program
     @return True if still alive, False otherwise
     """
-    pid = get_pid_from_file(program_name)
+    pid = get_pid_from_file(program_name, pid_files_dir)
     if pid is None:
         return False
     return pid_is_alive(pid)
 
 
-def signal_program(program_name, sig=signal.SIGTERM):
+def signal_program(program_name, sig=signal.SIGTERM, pid_files_dir=None):
     """
     Sends a signal to the process listed in <program_name>.pid
 
     @param program_name the name of the program
     @param sig signal to send
     """
-    pid = get_pid_from_file(program_name)
+    pid = get_pid_from_file(program_name, pid_files_dir)
     if pid:
         signal_pid(pid, sig)
 
@@ -2371,12 +2374,15 @@ class VersionableClass(object):
                     base.master_class == new_class.master_class):
                     bnew = list(bases)
                     bnew[bnew.index(base)] = new_class
+                    
                     return tuple(bnew)
                 else:
                     bnew = find_replace_class(base.__bases__)
                     if bnew:
                         base.__bases__ = bnew
 
+        logging.debug("Switch class %s by %s" % (new_class.master_class,
+                                                 new_class))
         bnew = find_replace_class(cls.__bases__)
         if bnew:
             cls.__bases__ = bnew

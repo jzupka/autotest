@@ -11,6 +11,8 @@ from autotest.client import utils, os_dep
 from autotest.client.shared import error, logging_config
 from autotest.client.shared import logging_manager, git
 
+import openvswitch
+
 try:
     import koji
     KOJI_INSTALLED = True
@@ -3793,7 +3795,42 @@ def open_tap(devname, ifname, vnet_hdr=True):
     return tapfd
 
 
+def is_virtual_network_dev(dev_name):
+    """
+    @param dev_name: Device name.
+
+    @return: True if dev_name is in virtual/net dir, else false.
+    """
+    if dev_name in os.listdir("/sys/devices/virtual/net/"):
+        return True
+    else:
+        return False
+
+
 def add_to_bridge(ifname, brname):
+    """
+    Add a TAP device to bridge
+
+    @param ifname: Name of TAP device
+    @param brname: Name of the bridge
+    """
+    try:
+        add_to_standard_bridge(ifname, brname)
+    except BRAddIfError, e:
+        print e
+
+
+def add_to_openvswitch(ifname, brname):
+    """
+    Add a TAP device to bridge
+
+    @param ifname: Name of TAP device
+    @param brname: Name of the bridge
+    """
+    print openvswitch.status()
+
+
+def add_to_standard_bridge(ifname, brname):
     """
     Add a TAP device to bridge
 
